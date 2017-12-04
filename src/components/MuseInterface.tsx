@@ -6,28 +6,11 @@ import ConnectPanel from './ConnectPanel'
 import DetailsPanel from './DetailsPanel'
 import AccelerometerPanel from './AccelerometerPanel'
 
+const numberOfElectrodes = 4;
 
 function MuseInterface() {
-  let OscCanvases = Array.from(document.querySelectorAll('.electrode-osc canvas')) as HTMLCanvasElement[];
 
-  function fitToContainer(canvas: HTMLCanvasElement){
-    canvas.style.width='100%';
-    canvas.style.height='100%';
-    canvas.width  = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-  }
-
-  OscCanvases.forEach((item, index) => {
-    fitToContainer(item);
-  });
-
-  let connect = async () => {
-    let graphTitles = Array.from(document.querySelectorAll('.electrode-item h3'));
-    let canvases = Array.from(document.querySelectorAll('.electrode-item canvas')) as HTMLCanvasElement[];
-    let canvasCtx = canvases.map(canvas => canvas.getContext('2d'));
-    let oscCanvases = Array.from(document.querySelectorAll('.electrode-osc canvas')) as HTMLCanvasElement[];
-    let oscCtxs = oscCanvases.map(canvas => canvas.getContext('2d'));
-
+  function fitOscCanvases(oscCanvases: HTMLCanvasElement[]) {
     function fitToContainer(canvas: HTMLCanvasElement){
       canvas.style.width='100%';
       canvas.style.height='100%';
@@ -38,44 +21,51 @@ function MuseInterface() {
     oscCanvases.forEach((item, index) => {
       fitToContainer(item);
     });
+  }
+
+  function setupDataArrays(EEGData: Array<any>, xPositions: Array<number>) {
+    for(var i = 0; i < numberOfElectrodes; i++) {
+      EEGData[i] = [] as Array<number>;
+      xPositions[i] = 0;
+    }
+  }
+
+  function animateOsc(oscCanvas: HTMLCanvasElement, oscCtx: CanvasRenderingContext2D, data: Array<any>, x: number) {
+    if (x < oscCanvas.width) {
+      for(xx = 0; xx < data.length; xx++) {
+        oscCtx.fillRect(xx, data[xx], 1, 1);
+      }
+    } else {
+      oscCtx.clearRect(0, 0, oscCanvas.width, oscCanvas.height);
+
+      for (var xx = 0; xx < oscCanvas.width; xx++) {
+        var y = data[x - oscCanvas.width + xx];
+        oscCtx.fillRect(xx, y, 1, 1)
+      }
+    }
+  }
+
+  let connect = async () => {
+    let graphTitles = Array.from(document.querySelectorAll('.electrode-item h3'));
+    let canvases = Array.from(document.querySelectorAll('.electrode-item canvas')) as HTMLCanvasElement[];
+    let canvasCtx = canvases.map(canvas => canvas.getContext('2d')) as CanvasRenderingContext2D[];
+    let oscCanvases = Array.from(document.querySelectorAll('.electrode-osc canvas')) as HTMLCanvasElement[];
+    let oscCtxs = oscCanvases.map(canvas => canvas.getContext('2d')) as CanvasRenderingContext2D[];
+    let EEGData = [] as Array<any>;
+    let xPositions = [] as Array<number>;
+
+    fitOscCanvases(oscCanvases);
+    setupDataArrays(EEGData, xPositions);
 
     graphTitles.forEach((item, index) => {
       item.textContent = channelNames[index];
     });
 
-    // capture incoming socket data in an array of arrays
-    let EEGData = [] as Array<any>;
-    EEGData[0] = [] as Array<number>;
-    EEGData[1] = [] as Array<number>;
-    EEGData[2] = [] as Array<number>;
-    EEGData[3] = [] as Array<number>;
-
-    let xPositions = [] as Array<number>;
-    xPositions[0] = 0;
-    xPositions[1] = 0;
-    xPositions[2] = 0;
-    xPositions[3] = 0;
-
     function animate() {
       requestAnimationFrame(animate);
 
       oscCanvases.forEach((oscCanvas, index) => {
-        let oscCtx = oscCtxs[index]!;
-        let data = EEGData[index];
-        let x = xPositions[index];
-
-        if (x < oscCanvas.width) {
-          for(xx = 0; xx < data.length; xx++) {
-            oscCtx.fillRect(xx, data[xx], 1, 1);
-          }
-        } else {
-          oscCtx.clearRect(0, 0, oscCanvas.width, oscCanvas.height);
-  
-          for (var xx = 0; xx < oscCanvas.width; xx++) {
-            var y = data[x - oscCanvas.width + xx];
-            oscCtx.fillRect(xx, y, 1, 1)
-          }
-        }
+        animateOsc(oscCanvas, oscCtxs[index], EEGData[index], xPositions[index]);
       });
     }
 
