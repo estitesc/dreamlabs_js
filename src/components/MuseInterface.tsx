@@ -49,25 +49,42 @@ function MuseInterface() {
     EEGData[1] = [] as Array<number>;
     EEGData[2] = [] as Array<number>;
     EEGData[3] = [] as Array<number>;
-    EEGData[4] = [] as Array<number>;
 
     let xPositions = [] as Array<number>;
     xPositions[0] = 0;
     xPositions[1] = 0;
     xPositions[2] = 0;
     xPositions[3] = 0;
-    xPositions[4] = 0;
 
-    let x = 0;
-    let plotOsc = true;
+    function animate() {
+      requestAnimationFrame(animate);
+
+      oscCanvases.forEach((oscCanvas, index) => {
+        let oscCtx = oscCtxs[index]!;
+        let data = EEGData[index];
+        let x = xPositions[index];
+
+        if (x < oscCanvas.width) {
+          for(xx = 0; xx < data.length; xx++) {
+            oscCtx.fillRect(xx, data[xx], 1, 1);
+          }
+        } else {
+          oscCtx.clearRect(0, 0, oscCanvas.width, oscCanvas.height);
+  
+          for (var xx = 0; xx < oscCanvas.width; xx++) {
+            var y = data[x - oscCanvas.width + xx];
+            oscCtx.fillRect(xx, y, 1, 1)
+          }
+        }
+      });
+    }
+
+    animate();
 
     function plot(reading: EEGReading) {
       const canvas = canvases[reading.electrode];
       const context = canvasCtx[reading.electrode];
-      const oscCanvas = oscCanvases[reading.electrode];
-      const oscCtx = oscCtxs[reading.electrode]!;
       let data = EEGData[reading.electrode];
-      // let x = xPositions[reading.electrode];
 
       if (!context) {
         return;
@@ -76,8 +93,6 @@ function MuseInterface() {
       const height = canvas.height / 2.0;
       context.fillStyle = 'green';
       context.clearRect(0, 0, canvas.width, canvas.height);
-
-      // var panAtX = oscCanvas.width;
 
       for (let i = 0; i < reading.samples.length; i++) {
         const sample = reading.samples[i] / 15.;
@@ -89,25 +104,7 @@ function MuseInterface() {
 
         let oscSample = reading.samples[i];
         data.push(oscSample);
-      }
-
-      if (x > data.length - 1) {
-        return;
-      }
-
-      if (!plotOsc) {
-        return;
-      }
-
-      if (x++ < oscCanvas.width) {
-        oscCtx.fillRect(x, data[x], 1, 1);
-      } else {
-        oscCtx.clearRect(0, 0, oscCanvas.width, oscCanvas.height);
-
-        for (var xx = 0; xx < oscCanvas.width; xx++) {
-          var y = data[x - oscCanvas.width + xx];
-          oscCtx.fillRect(xx, y, 1, 1)
-        }
+        xPositions[reading.electrode]++;
       }
     }
 
