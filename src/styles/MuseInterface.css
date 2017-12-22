@@ -8,3 +8,7 @@ canvas {
   background: rgb(151, 151, 151);
   border: solid black 1px;
 }
+
+body {
+  background-color: rgb(151, 151, 151);
+}
