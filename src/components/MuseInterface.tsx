@@ -30,19 +30,23 @@ function MuseInterface() {
     }
   }
 
-  function animateOsc(oscCanvas: HTMLCanvasElement, oscCtx: CanvasRenderingContext2D, data: Array<any>, x: number) {
+  function animateLineOsc(oscCanvas: HTMLCanvasElement, oscCtx: CanvasRenderingContext2D, data: Array<any>, x: number) {
+    oscCtx.clearRect(0, 0, oscCanvas.width, oscCanvas.height);
+    oscCtx.beginPath();
+    oscCtx.moveTo(0,0);
+    
     if (x < oscCanvas.width) {
       for(xx = 0; xx < data.length; xx++) {
-        oscCtx.fillRect(xx, data[xx], 1, 1);
+        oscCtx.lineTo(xx, data[xx]);
       }
     } else {
-      oscCtx.clearRect(0, 0, oscCanvas.width, oscCanvas.height);
-
       for (var xx = 0; xx < oscCanvas.width; xx++) {
         var y = data[x - oscCanvas.width + xx];
-        oscCtx.fillRect(xx, y, 1, 1)
+        oscCtx.lineTo(xx, y);
       }
     }
+
+    oscCtx.stroke();
   }
 
   let connect = async () => {
@@ -65,7 +69,7 @@ function MuseInterface() {
       requestAnimationFrame(animate);
 
       oscCanvases.forEach((oscCanvas, index) => {
-        animateOsc(oscCanvas, oscCtxs[index], EEGData[index], xPositions[index]);
+        animateLineOsc(oscCanvas, oscCtxs[index], EEGData[index], xPositions[index]);
       });
     }
 
